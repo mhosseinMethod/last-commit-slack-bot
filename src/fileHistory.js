@@ -1,4 +1,4 @@
-const { Octokit } = require('octokit');
+const { Octokit } = require('@octokit/rest');
 
 /**
  * Get commit history for a specific file in a GitHub repository
