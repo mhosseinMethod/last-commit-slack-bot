@@ -41,12 +41,12 @@ function formatRepoHistory(data) {
     const commitUrl = c.url || "";
     const message = (c.message || "").trim() || "(no message)";
     const author = `:bust_in_silhouette: ${c.author}`;
-    const rtime = `*${c.relativeTime}*` || "";
+    const rtime = `_${c.relativeTime}_` || "";
     const aiSummary =
       (`:bulb: ${c.pr?.aiSummary}` || "").trim() || "(no AI summary)";
 
     // Line 1: clickable hash (links to commitUrl) then " - message"
-    const hashDisplay = `**[${hash}](${commitUrl})**`;
+    const hashDisplay = `[*${hash}*](${commitUrl})`;
     lines.push(`${hashDisplay} - ${message}`);
 
     // Line 2: author • relativeTime
