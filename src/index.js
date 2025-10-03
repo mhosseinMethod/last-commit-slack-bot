@@ -96,19 +96,21 @@ app.post("/slack/commands", async (req, res) => {
           }
 
           // Format the response
-          // let message = `📁 *File History for \`${result.file}\` in \`${repoNameWithOrg}\`*\n\n`;
+          let message = `📁 *File History for \`${result.file}\` in \`${repoNameWithOrg}\`*\n\n`;
 
-          // if (result.commits.length === 0) {
-          //   message += "No commits found for this file.";
-          // } else {
-          //   result.commits.forEach((commit, index) => {
-          //     message += `${index + 1}. *${commit.hash}* - ${commit.message}\n`;
-          //     message += `   👤 ${commit.author} • ${formatRelativeTime(commit.date)}\n`;
-          //     message += `   🔗 ${commit.url}\n\n`;
-          //   });
-          // }
+          if (result.commits.length === 0) {
+            message += "No commits found for this file.";
+          } else {
+            result.commits.forEach((commit, index) => {
+              message += `${index + 1}. *${commit.hash}* - ${commit.message}\n`;
+              message += `   👤 ${commit.author} • ${formatRelativeTime(
+                commit.date
+              )}\n`;
+              message += `   🔗 ${commit.url}\n\n`;
+            });
+          }
 
-          const message = formatFileHistory(result, repoNameWithOrg);
+          // const message = formatFileHistory(result, repoNameWithOrg);
 
           await axios.post(response_url, {
             text: message,

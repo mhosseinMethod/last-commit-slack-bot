@@ -48,7 +48,7 @@ function formatRepoHistory(data) {
 
     // Line 1: clickable hash (links to commitUrl) then " - message"
     const hashDisplay = `*${hash}* (${commitUrl})`;
-    lines.push(`${index}. ${hashDisplay} - ${message}`);
+    lines.push(`${index++}. ${hashDisplay} - ${message}`);
 
     // Line 2: author • relativeTime
     const metaParts = [author];
