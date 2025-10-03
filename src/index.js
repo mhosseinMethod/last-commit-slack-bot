@@ -15,117 +15,100 @@ app.post("/slack/commands", async (req, res) => {
   try {
     const { command, text, user_id, response_url } = req.body;
 
-    console.log("in the command");
+    console.log("Received command:", command);
 
+    const githubToken = process.env.GITHUB_TOKEN;
+
+    if (!githubToken) {
+      return res.send("❌ Error: GITHUB_TOKEN not configured.");
+    }
+
+    // /history repo-name - Get repository commit history
     if (command === "/history") {
       const args = text ? text.trim().split(/\s+/) : [];
 
-      // Check if we have at least a repo name
       if (args.length < 1) {
-        return res.send(
-          "Usage: /history repo-name [path/to/file.js]\nProvide just repo-name for repo history, or add file path for file history."
-        );
+        return res.send("Usage: /history repo-name\nExample: /history runtime-core");
       }
 
       const repoInput = args[0];
 
-      // Auto-prepend methodcrm/ if not already included
-      const repoNameWithOrg = repoInput.includes("/")
-        ? repoInput
-        : `methodcrm/${repoInput}`;
+      // Immediate response
+      res.send(`Fetching last 5 commits for methodcrm/${repoInput}...`);
 
-      // Async processing
       try {
-        const githubToken = process.env.GITHUB_TOKEN;
+        const result = await getRepoCommits(repoInput, 5, "master");
 
-        if (!githubToken) {
+        if (!result.success) {
           await axios.post(response_url, {
-            text: `❌ Error: GITHUB_TOKEN not configured.`,
+            text: `❌ Error: ${result.message || "Failed to fetch repo history"}`,
             response_type: "in_channel",
           });
           return;
         }
 
-        // CASE 1: Only repo name provided -> Repo history (last 5 commits)
-        if (args.length === 1) {
-          // Immediate response
-          res.send(`Fetching last 5 commits for ${repoNameWithOrg}...`);
+        const message = formatRepoHistory(result);
 
-          // Get repo history (Dev 2's function)
-          const result = await getRepoCommits(repoInput, 5, "master");
-
-          if (!result.success) {
-            await axios.post(response_url, {
-              text: `❌ Error: ${
-                result.message || "Failed to fetch repo history"
-              }`,
-              response_type: "in_channel",
-            });
-            return;
-          }
-
-          // Format using Dev 4's formatter
-          const message = formatRepoHistory(result);
-
-          await axios.post(response_url, {
-            text: message,
-            response_type: "in_channel",
-          });
-        }
-        // CASE 2: Repo name + file path -> File history
-        else {
-          const filePath = args.slice(1).join(" "); // Handle file paths with spaces
-
-          // Immediate response
-          res.send(`Fetching history for ${filePath} in ${repoNameWithOrg}...`);
-
-          // Call Dev 3's function
-          const result = await getFileCommits(
-            repoNameWithOrg,
-            filePath,
-            5,
-            githubToken
-          );
-
-          if (!result.success) {
-            await axios.post(response_url, {
-              text: `❌ Error: ${result.error}`,
-              response_type: "in_channel",
-            });
-            return;
-          }
-
-          // Format the response
-          let message = `📁 *File History for \`${result.file}\` in \`${repoNameWithOrg}\`*\n\n`;
-
-          if (result.commits.length === 0) {
-            message += "No commits found for this file.";
-          } else {
-            result.commits.forEach((commit, index) => {
-              message += `${index + 1}. *${commit.hash}* - ${commit.message}\n`;
-              message += `   👤 ${commit.author} • ${formatRelativeTime(
-                commit.date
-              )}\n`;
-              message += `   🔗 ${commit.url}\n\n`;
-            });
-          }
-
-          // const message = formatFileHistory(result, repoNameWithOrg);
-
-          await axios.post(response_url, {
-            text: message,
-            response_type: "in_channel",
-          });
-        }
+        await axios.post(response_url, {
+          text: message,
+          response_type: "in_channel",
+        });
       } catch (err) {
-        console.error("Error processing history command:", err.message);
+        console.error("Error processing /history command:", err.message);
+        await axios.post(response_url, {
+          text: `❌ Error: ${err.message}`,
+          response_type: "in_channel",
+        });
+      }
+    }
+    // /filehistory repo-name file-path - Get file commit history
+    else if (command === "/filehistory") {
+      const args = text ? text.trim().split(/\s+/) : [];
+
+      if (args.length < 2) {
+        return res.send(
+          "Usage: /filehistory repo-name path/to/file\nExample: /filehistory runtime-core src/index.js"
+        );
+      }
+
+      const repoInput = args[0];
+      const filePath = args.slice(1).join(" "); // Handle file paths with spaces
+      const repoNameWithOrg = `methodcrm/${repoInput}`;
+
+      // Immediate response
+      res.send(`Fetching history for ${filePath} in ${repoNameWithOrg}...`);
+
+      try {
+        const result = await getFileCommits(
+          repoNameWithOrg,
+          filePath,
+          5,
+          githubToken
+        );
+
+        if (!result.success) {
+          await axios.post(response_url, {
+            text: `❌ Error: ${result.error}`,
+            response_type: "in_channel",
+          });
+          return;
+        }
+
+        const message = formatFileHistory(result, repoNameWithOrg);
+
+        await axios.post(response_url, {
+          text: message,
+          response_type: "in_channel",
+        });
+      } catch (err) {
+        console.error("Error processing /filehistory command:", err.message);
         await axios.post(response_url, {
           text: `❌ Error: ${err.message}`,
           response_type: "in_channel",
         });
       }
     } else {
-      res.send("Unknown command");
+      res.send("Unknown command. Available commands: /history, /filehistory");
     }
   } catch (err) {
     console.error("Error handling slash command:", err.message);
