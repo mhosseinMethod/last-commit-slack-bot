@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const { WebClient } = require("@slack/web-api");
 const axios = require("axios");
@@ -15,16 +16,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // Replace with your Bot User OAuth Token from Slack App
-const slackToken =
-  process.env.SLACK_BOT_TOKEN ||
-  "xoxb-11419123200-9661608807056-lnm229Hsxt1UtIKiXgloilIT";
+const slackToken = process.env.SLACK_BOT_TOKEN;
 const slackClient = new WebClient(slackToken);
 
 app.post("/slack/commands", async (req, res) => {
   //   const { command, text, user_id, channel_id } = req.body;
   const { command, text, user_id, channel_id, response_url } = req.body;
-
-  console.log("Incoming Slack payload:", req.body);
 
   if (command === "/history") {
     // text could be "repo1 repo2 repo3"
