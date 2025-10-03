@@ -15,10 +15,6 @@ app.use(express.urlencoded({ extended: true }));
 // Middleware to parse JSON
 app.use(express.json());
 
-// Replace with your Bot User OAuth Token from Slack App
-const slackToken = process.env.SLACK_BOT_TOKEN;
-const slackClient = new WebClient(slackToken);
-
 app.post("/slack/commands", async (req, res) => {
   //   const { command, text, user_id, channel_id } = req.body;
   const { command, text, user_id, channel_id, response_url } = req.body;
