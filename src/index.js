@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
+const { getFileCommits, formatRelativeTime } = require("./fileHistory");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -15,26 +16,66 @@ app.post("/slack/commands", async (req, res) => {
     console.log('in the command');
 
     if (command === "/history") {
-      const repoNames = text ? text.split(/\s+/) : [];
+      const args = text ? text.trim().split(/\s+/) : [];
 
-      if (repoNames.length === 0) {
-        return res.send("Please provide at least one repository name.");
+      // Expect format: /history owner/repo path/to/file.js
+      if (args.length < 2) {
+        return res.send("Usage: /history owner/repo path/to/file.js");
       }
 
-      // Immediate response to Slack
-      const responseText = `You requested history for: ${repoNames.join(", ")}`;
-      res.send(responseText);
+      const repoName = args[0];
+      const filePath = args.slice(1).join(" "); // Handle file paths with spaces
 
-      // Async message to channel or user
+      // Immediate response to Slack (must respond within 3 seconds)
+      res.send(`Fetching history for ${filePath} in ${repoName}...`);
+
+      // Async processing
       try {
+        const githubToken = process.env.GITHUB_TOKEN;
+
+        if (!githubToken) {
+          await axios.post(response_url, {
+            text: `❌ Error: GITHUB_TOKEN not configured.`,
+            response_type: "in_channel",
+          });
+          return;
+        }
+
+        // Call Dev 3's function
+        const result = await getFileCommits(repoName, filePath, 5, githubToken);
+
+        if (!result.success) {
+          await axios.post(response_url, {
+            text: `❌ Error: ${result.error}`,
+            response_type: "in_channel",
+          });
+          return;
+        }
+
+        // Format the response (Dev 4 will improve this later)
+        let message = `📁 *File History for \`${result.file}\` in \`${repoName}\`*\n\n`;
+
+        if (result.commits.length === 0) {
+          message += "No commits found for this file.";
+        } else {
+          result.commits.forEach((commit, index) => {
+            message += `${index + 1}. *${commit.hash}* - ${commit.message}\n`;
+            message += `   👤 ${commit.author} • ${formatRelativeTime(commit.date)}\n`;
+            message += `   🔗 ${commit.url}\n\n`;
+          });
+        }
+
         await axios.post(response_url, {
-          text: `Hi <@${user_id}>, fetching history for: ${repoNames.join(
-            ", "
-          )}`,
+          text: message,
           response_type: "in_channel",
         });
+
       } catch (err) {
-        console.error("Error sending async message to Slack:", err.message);
+        console.error("Error processing file history:", err.message);
+        await axios.post(response_url, {
+          text: `❌ Error: ${err.message}`,
+          response_type: "in_channel",
+        });
       }
     } else {
       res.send("Unknown command");
