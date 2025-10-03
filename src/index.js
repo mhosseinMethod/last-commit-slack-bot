@@ -23,8 +23,36 @@ app.post("/slack/commands", async (req, res) => {
       return res.send("❌ Error: GITHUB_TOKEN not configured.");
     }
 
+    // /help - Show available commands
+    if (command === "/help") {
+      const helpMessage = `
+📚 *Available Commands*
+
+*1. /history* - Get repository commit history
+   Usage: \`/history repo-name [branch-name]\`
+   Examples:
+   • \`/history runtime-core\` - Get last 5 commits from master branch
+   • \`/history runtime-core develop\` - Get last 5 commits from develop branch
+   Returns: Last 5 commits with PR info and AI summaries
+
+*2. /filehistory* - Get file commit history
+   Usage: \`/filehistory repo-name path/to/file [branch-name]\`
+   Examples:
+   • \`/filehistory runtime-core src/index.js\` - Get file history from master
+   • \`/filehistory runtime-core src/index.js develop\` - Get file history from develop branch
+   Returns: Last 5 commits for the specific file
+
+*3. /help* - Show this help message
+
+📝 *Notes:*
+• All repositories are prefixed with \`methodcrm/\` automatically
+• Branch name defaults to \`master\` if not specified
+      `.trim();
+
+      return res.send(helpMessage);
+    }
     // /history repo-name [branch-name] - Get repository commit history
-    if (command === "/history") {
+    else if (command === "/history") {
       const args = text ? text.trim().split(/\s+/) : [];
 
       if (args.length < 1) {
@@ -125,7 +153,7 @@ app.post("/slack/commands", async (req, res) => {
         });
       }
     } else {
-      res.send("Unknown command. Available commands: /history, /filehistory");
+      res.send("Unknown command. Available commands: /history, /filehistory, /help\nType /help for more information.");
     }
   } catch (err) {
     console.error("Error handling slash command:", err.message);
