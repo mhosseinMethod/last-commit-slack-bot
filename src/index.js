@@ -3,7 +3,7 @@ const express = require("express");
 const axios = require("axios");
 const { getFileCommits, formatRelativeTime } = require("./fileHistory");
 const { getRepoCommits } = require("./repo-history/repoHistory");
-const { formatRepoHistory } = require("./format");
+const { formatRepoHistory, formatFileHistory } = require("./format");
 
 const app = express();
 const port = process.env.PORT || 3000;

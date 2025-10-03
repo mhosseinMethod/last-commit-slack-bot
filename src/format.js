@@ -33,6 +33,7 @@ function formatRepoHistory(data) {
 
   // Recent commits header
   lines.push(":clipboard: Recent Commits:");
+  let index = 1;
 
   // Commit list
   for (const c of commits) {
@@ -46,8 +47,8 @@ function formatRepoHistory(data) {
       (`:bulb: ${c.pr?.aiSummary}` || "").trim() || "(no AI summary)";
 
     // Line 1: clickable hash (links to commitUrl) then " - message"
-    const hashDisplay = `[*${hash}*](${commitUrl})`;
-    lines.push(`${hashDisplay} - ${message}`);
+    const hashDisplay = `*${hash}* (${commitUrl})`;
+    lines.push(`${index}. ${hashDisplay} - ${message}`);
 
     // Line 2: author • relativeTime
     const metaParts = [author];
@@ -58,7 +59,7 @@ function formatRepoHistory(data) {
     lines.push(aiSummary);
 
     // blank spacer
-    lines.push("");
+    lines.push(`\n`);
 
     // Safety: stop early if close to limit
     const currentLen = lines.reduce((acc, l) => acc + l.length + 1, 0); // +1 for newline
