@@ -106,11 +106,10 @@ async function getPRForCommit(owner, repo, sha) {
 /**
  * Get last N commits from a repository
  * @param {string} repoName - Repo name (e.g., "runtime-core") - will be prefixed with "methodcrm/"
- * @param {number} noOfCommits - Number of commits to fetch (default: 5)
  * @param {string} branchName - Branch name to fetch commits from (default: "master")
  * @returns {Promise<Object>} - {success: bool, commits: [...], summary: string}
  */
-async function getRepoCommits(repoName, noOfCommits = 5, branchName = 'master') {
+async function getRepoCommits(repoName, branchName = 'master') {
   try {
     // Auto-prefix with methodcrm/
     const owner = 'methodcrm';
@@ -121,7 +120,7 @@ async function getRepoCommits(repoName, noOfCommits = 5, branchName = 'master') 
       owner,
       repo,
       sha: branchName,
-      per_page: noOfCommits
+      per_page: 5
     });
 
     // Format commit data and fetch PR info for each

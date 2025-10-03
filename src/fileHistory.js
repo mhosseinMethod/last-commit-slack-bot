@@ -4,11 +4,11 @@ const { Octokit } = require('@octokit/rest');
  * Get commit history for a specific file in a GitHub repository
  * @param {string} repoName - Repository name in format "owner/repo"
  * @param {string} filePath - Path to the file in the repository
- * @param {number} count - Number of commits to retrieve (default: 5)
  * @param {string} githubToken - GitHub personal access token
+ * @param {string} branchName - Branch name to fetch commits from (default: "master")
  * @returns {Promise<Object>} Object containing success status, commits array, file path, and any errors
  */
-async function getFileCommits(repoName, filePath, count = 5, githubToken) {
+async function getFileCommits(repoName, filePath, githubToken, branchName = 'master') {
   try {
     // Input validation
     if (!repoName || typeof repoName !== 'string') {
@@ -61,7 +61,8 @@ async function getFileCommits(repoName, filePath, count = 5, githubToken) {
       owner: owner,
       repo: repo,
       path: filePath,
-      per_page: count
+      sha: branchName,
+      per_page: 5
     });
 
     // Check if any commits were found

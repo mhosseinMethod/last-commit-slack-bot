@@ -23,21 +23,22 @@ app.post("/slack/commands", async (req, res) => {
       return res.send("❌ Error: GITHUB_TOKEN not configured.");
     }
 
-    // /history repo-name - Get repository commit history
+    // /history repo-name [branch-name] - Get repository commit history
     if (command === "/history") {
       const args = text ? text.trim().split(/\s+/) : [];
 
       if (args.length < 1) {
-        return res.send("Usage: /history repo-name\nExample: /history runtime-core");
+        return res.send("Usage: /history repo-name [branch-name]\nExample: /history runtime-core\nExample: /history runtime-core develop");
       }
 
       const repoInput = args[0];
+      const branchName = args[1] || "master"; // Optional branch parameter
 
       // Immediate response
-      res.send(`Fetching last 5 commits for methodcrm/${repoInput}...`);
+      res.send(`Fetching last 5 commits for methodcrm/${repoInput} from ${branchName}...`);
 
       try {
-        const result = await getRepoCommits(repoInput, 5, "master");
+        const result = await getRepoCommits(repoInput, branchName);
 
         if (!result.success) {
           await axios.post(response_url, {
@@ -61,29 +62,45 @@ app.post("/slack/commands", async (req, res) => {
         });
       }
     }
-    // /filehistory repo-name file-path - Get file commit history
+    // /filehistory repo-name file-path [branch-name] - Get file commit history
     else if (command === "/filehistory") {
       const args = text ? text.trim().split(/\s+/) : [];
 
       if (args.length < 2) {
         return res.send(
-          "Usage: /filehistory repo-name path/to/file\nExample: /filehistory runtime-core src/index.js"
+          "Usage: /filehistory repo-name path/to/file [branch-name]\nExample: /filehistory runtime-core src/index.js\nExample: /filehistory runtime-core src/index.js develop"
         );
       }
 
       const repoInput = args[0];
-      const filePath = args.slice(1).join(" "); // Handle file paths with spaces
+
+      // Check if last arg is a branch name (doesn't contain / or .)
+      const lastArg = args[args.length - 1];
+      const isBranch = !lastArg.includes('/') && !lastArg.includes('.');
+
+      let filePath;
+      let branchName = "master";
+
+      if (isBranch && args.length > 2) {
+        // Last arg is branch name
+        filePath = args.slice(1, -1).join(" ");
+        branchName = lastArg;
+      } else {
+        // No branch specified, all args after repo are file path
+        filePath = args.slice(1).join(" ");
+      }
+
       const repoNameWithOrg = `methodcrm/${repoInput}`;
 
       // Immediate response
-      res.send(`Fetching history for ${filePath} in ${repoNameWithOrg}...`);
+      res.send(`Fetching history for ${filePath} in ${repoNameWithOrg} from ${branchName}...`);
 
       try {
         const result = await getFileCommits(
           repoNameWithOrg,
           filePath,
-          5,
-          githubToken
+          githubToken,
+          branchName
         );
 
         if (!result.success) {
