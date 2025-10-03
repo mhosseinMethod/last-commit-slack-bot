@@ -32,7 +32,8 @@ function formatRepoHistory(data) {
   const lines = [];
 
   // Recent commits header
-  lines.push(":clipboard: Recent Commits:");
+  lines.push(`*:clipboard: Repo history for ${repo}:*`);
+  lines.push(`\n`);
   let index = 1;
 
   // Commit list
@@ -44,7 +45,7 @@ function formatRepoHistory(data) {
     const author = `:bust_in_silhouette: ${c.author}`;
     const rtime = `_${c.relativeTime}_` || "";
     const aiSummary =
-      (`:bulb: ${c.pr?.aiSummary}` || "").trim() || "(no AI summary)";
+      (`:sparkles: ${c.pr?.aiSummary}` || "").trim() || "(no AI summary)";
 
     // Line 1: clickable hash (links to commitUrl) then " - message"
     const hashDisplay = `*${hash}* (${commitUrl})`;
@@ -93,7 +94,7 @@ function formatFileHistory(data, repoName = "") {
   }
 
   const fileName = data.file || "unknown file";
-  let message = `📁 *lol File History for \`${fileName}\``;
+  let message = `📁 *File History for \`${fileName}\``;
 
   if (repoName) {
     message += ` in \`${repoName}\``;
