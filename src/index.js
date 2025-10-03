@@ -15,20 +15,24 @@ app.post("/slack/commands", async (req, res) => {
   try {
     const { command, text, user_id, response_url } = req.body;
 
-    console.log('in the command');
+    console.log("in the command");
 
     if (command === "/history") {
       const args = text ? text.trim().split(/\s+/) : [];
 
       // Check if we have at least a repo name
       if (args.length < 1) {
-        return res.send("Usage: /history repo-name [path/to/file.js]\nProvide just repo-name for repo history, or add file path for file history.");
+        return res.send(
+          "Usage: /history repo-name [path/to/file.js]\nProvide just repo-name for repo history, or add file path for file history."
+        );
       }
 
       const repoInput = args[0];
 
       // Auto-prepend methodcrm/ if not already included
-      const repoNameWithOrg = repoInput.includes('/') ? repoInput : `methodcrm/${repoInput}`;
+      const repoNameWithOrg = repoInput.includes("/")
+        ? repoInput
+        : `methodcrm/${repoInput}`;
 
       // Async processing
       try {
@@ -48,11 +52,13 @@ app.post("/slack/commands", async (req, res) => {
           res.send(`Fetching last 5 commits for ${repoNameWithOrg}...`);
 
           // Get repo history (Dev 2's function)
-          const result = await getRepoCommits(repoInput, 5, 'master');
+          const result = await getRepoCommits(repoInput, 5, "master");
 
           if (!result.success) {
             await axios.post(response_url, {
-              text: `❌ Error: ${result.message || 'Failed to fetch repo history'}`,
+              text: `❌ Error: ${
+                result.message || "Failed to fetch repo history"
+              }`,
               response_type: "in_channel",
             });
             return;
@@ -74,7 +80,12 @@ app.post("/slack/commands", async (req, res) => {
           res.send(`Fetching history for ${filePath} in ${repoNameWithOrg}...`);
 
           // Call Dev 3's function
-          const result = await getFileCommits(repoNameWithOrg, filePath, 5, githubToken);
+          const result = await getFileCommits(
+            repoNameWithOrg,
+            filePath,
+            5,
+            githubToken
+          );
 
           if (!result.success) {
             await axios.post(response_url, {
@@ -85,24 +96,25 @@ app.post("/slack/commands", async (req, res) => {
           }
 
           // Format the response
-          let message = `📁 *File History for \`${result.file}\` in \`${repoNameWithOrg}\`*\n\n`;
+          // let message = `📁 *File History for \`${result.file}\` in \`${repoNameWithOrg}\`*\n\n`;
 
-          if (result.commits.length === 0) {
-            message += "No commits found for this file.";
-          } else {
-            result.commits.forEach((commit, index) => {
-              message += `${index + 1}. *${commit.hash}* - ${commit.message}\n`;
-              message += `   👤 ${commit.author} • ${formatRelativeTime(commit.date)}\n`;
-              message += `   🔗 ${commit.url}\n\n`;
-            });
-          }
+          // if (result.commits.length === 0) {
+          //   message += "No commits found for this file.";
+          // } else {
+          //   result.commits.forEach((commit, index) => {
+          //     message += `${index + 1}. *${commit.hash}* - ${commit.message}\n`;
+          //     message += `   👤 ${commit.author} • ${formatRelativeTime(commit.date)}\n`;
+          //     message += `   🔗 ${commit.url}\n\n`;
+          //   });
+          // }
+
+          const message = formatFileHistory(result, repoNameWithOrg);
 
           await axios.post(response_url, {
             text: message,
             response_type: "in_channel",
           });
         }
-
       } catch (err) {
         console.error("Error processing history command:", err.message);
         await axios.post(response_url, {
